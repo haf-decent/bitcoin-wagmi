@@ -41,17 +41,17 @@ export const useBitcoinWagmi = (): BitcoinConfigData => {
   return context
 }
 
-type BitcoinWagmiConfigProps = {
+type Props = {
   children: ReactNode
   network?: BitcoinNetwork
   queryClient?: QueryClient
 }
 
-export function BitcoinWagmiConfig({
+export function BitcoinWagmiProvider({
   children,
   network = "mainnet",
   queryClient = new QueryClient()
-}: BitcoinWagmiConfigProps) {
+}: Props) {
   const [connectors, setConnectors] = useState<SatsConnector[]>([])
   const [connector, setConnector] = useState<SatsConnector>()
 
