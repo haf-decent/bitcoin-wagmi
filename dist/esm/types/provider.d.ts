@@ -8,10 +8,10 @@ type BitcoinConfigData = {
     setConnector: Dispatch<SetStateAction<SatsConnector | undefined>>;
 };
 export declare const useBitcoinWagmi: () => BitcoinConfigData;
-type BitcoinWagmiConfigProps = {
+type Props = {
     children: ReactNode;
     network?: BitcoinNetwork;
     queryClient?: QueryClient;
 };
-export declare function BitcoinWagmiConfig({ children, network, queryClient }: BitcoinWagmiConfigProps): React.JSX.Element;
+export declare function BitcoinWagmiProvider({ children, network, queryClient }: Props): React.JSX.Element;
 export {};

@@ -365,12 +365,12 @@ type BitcoinConfigData = {
     setConnector: Dispatch<SetStateAction<SatsConnector | undefined>>;
 };
 declare const useBitcoinWagmi: () => BitcoinConfigData;
-type BitcoinWagmiConfigProps = {
+type Props = {
     children: ReactNode;
     network?: BitcoinNetwork;
     queryClient?: QueryClient;
 };
-declare function BitcoinWagmiConfig({ children, network, queryClient }: BitcoinWagmiConfigProps): React.JSX.Element;
+declare function BitcoinWagmiProvider({ children, network, queryClient }: Props): React.JSX.Element;
 
 declare function useBitcoinAccount(): {
     connector: SatsConnector | undefined;
@@ -670,4 +670,4 @@ declare function useBitcoinDisconnect(): {
     submittedAt: number;
 };
 
-export { BitcoinWagmiConfig, BitgetConnector, LeatherConnector, OkxConnector, SatsConnector, UnisatConnector, XverseConnector, useBitcoinAccount, useBitcoinConnect, useBitcoinDisconnect, useBitcoinWagmi };
+export { BitcoinWagmiProvider, BitgetConnector, LeatherConnector, OkxConnector, SatsConnector, UnisatConnector, XverseConnector, useBitcoinAccount, useBitcoinConnect, useBitcoinDisconnect, useBitcoinWagmi };

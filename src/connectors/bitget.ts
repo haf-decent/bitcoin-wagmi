@@ -138,7 +138,7 @@ export class BitgetConnector extends SatsConnector {
   }
 
   async isReady() {
-    this.ready = typeof window.bitkeep.unisat !== "undefined"
+    this.ready = typeof window.bitkeep?.unisat !== "undefined"
 
     return this.ready
   }

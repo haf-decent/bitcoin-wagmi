@@ -137,7 +137,7 @@ export class OkxConnector extends SatsConnector {
   }
 
   async isReady() {
-    this.ready = typeof window.okxwallet.bitcoin !== "undefined"
+    this.ready = typeof window.okxwallet?.bitcoin !== "undefined"
 
     return this.ready
   }
