@@ -118,6 +118,7 @@ export class OkxConnector extends SatsConnector {
       window.okxwallet.bitcoin.getPublicKey()
     ])
 
+    this.accounts = accounts
     this.address = accounts[0]
     this.publicKey = publickKey
 
@@ -125,8 +126,7 @@ export class OkxConnector extends SatsConnector {
   }
 
   disconnect() {
-    this.address = undefined
-    this.publicKey = undefined
+    super.disconnect()
 
     window.okxwallet.bitcoin.removeListener("accountsChanged", this.changeAccount)
   }

@@ -66,6 +66,7 @@ export class XverseConnector extends SatsConnector {
             throw new Error(`Invalid Network. Please switch to bitcoin ${this.network}.`)
           }
 
+          this.accounts = res.addresses.map(a => a.address)
           this.address = address
           this.paymentAddress = paymentAddress
           this.publicKey = publicKey

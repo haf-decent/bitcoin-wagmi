@@ -117,6 +117,7 @@ export class UnisatConnector extends SatsConnector {
       window.unisat.getPublicKey()
     ])
 
+    this.accounts = accounts
     this.address = accounts[0]
     this.publicKey = publickKey
 
@@ -124,8 +125,7 @@ export class UnisatConnector extends SatsConnector {
   }
 
   disconnect() {
-    this.address = undefined
-    this.publicKey = undefined
+    super.disconnect()
 
     window.unisat.removeListener("accountsChanged", this.changeAccount)
   }

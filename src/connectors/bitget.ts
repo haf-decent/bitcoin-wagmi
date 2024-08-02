@@ -119,6 +119,7 @@ export class BitgetConnector extends SatsConnector {
       window.bitkeep.unisat.getPublicKey()
     ])
 
+    this.accounts = accounts
     this.address = accounts[0]
     this.publicKey = publickKey
 
@@ -126,8 +127,7 @@ export class BitgetConnector extends SatsConnector {
   }
 
   disconnect() {
-    this.address = undefined
-    this.publicKey = undefined
+    super.disconnect()
 
     window.bitkeep.unisat.removeListener("accountsChanged", this.changeAccount)
   }

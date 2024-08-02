@@ -100,6 +100,7 @@ export class LeatherConnector extends SatsConnector {
       throw new Error(`Invalid Network. Please switch to bitcoin ${this.network}.`)
     }
 
+    this.accounts = userAddresses.result.addresses.map(a => a.address)
     this.address = account.address
     this.publicKey = account.publicKey
     this.derivationPath = account.derivationPath

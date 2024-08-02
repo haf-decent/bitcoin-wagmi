@@ -27,6 +27,7 @@ export abstract class SatsConnector {
   /** Whether connector is usable */
   ready: boolean = false
 
+  accounts: Address[] = []
   address: Address | undefined = ""
 
   publicKey: string | undefined
@@ -48,12 +49,17 @@ export abstract class SatsConnector {
   abstract isReady(): Promise<boolean>
 
   disconnect() {
+    this.accounts = []
     this.address = undefined
     this.publicKey = undefined
   }
 
   getAccount(): string | undefined {
     return this.address
+  }
+
+  getAccounts(): string[] {
+    return this.accounts
   }
 
   isAuthorized(): boolean {
