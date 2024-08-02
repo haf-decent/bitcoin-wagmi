@@ -18,6 +18,7 @@ declare abstract class SatsConnector {
     abstract homepage: string;
     /** Whether connector is usable */
     ready: boolean;
+    accounts: Address[];
     address: Address | undefined;
     publicKey: string | undefined;
     network: WalletNetwork;
@@ -29,6 +30,7 @@ declare abstract class SatsConnector {
     abstract isReady(): Promise<boolean>;
     disconnect(): void;
     getAccount(): string | undefined;
+    getAccounts(): string[];
     isAuthorized(): boolean;
     getNetwork(): Promise<Network$3>;
     getPublicKey(): Promise<string>;
@@ -375,6 +377,7 @@ declare function BitcoinWagmiProvider({ children, network, queryClient }: Props)
 declare function useBitcoinAccount(): {
     connector: SatsConnector | undefined;
     address: string | undefined;
+    addresses: string[];
     error: Error;
     isError: true;
     isPending: false;
@@ -396,11 +399,12 @@ declare function useBitcoinAccount(): {
     isPlaceholderData: boolean;
     isRefetching: boolean;
     isStale: boolean;
-    refetch: (options?: _tanstack_react_query.RefetchOptions) => Promise<_tanstack_react_query.QueryObserverResult<string | undefined, Error>>;
+    refetch: (options?: _tanstack_react_query.RefetchOptions) => Promise<_tanstack_react_query.QueryObserverResult<[string | undefined, string[]], Error>>;
     fetchStatus: _tanstack_react_query.FetchStatus;
 } | {
     connector: SatsConnector | undefined;
     address: string | undefined;
+    addresses: string[];
     error: null;
     isError: false;
     isPending: false;
@@ -422,85 +426,7 @@ declare function useBitcoinAccount(): {
     isPlaceholderData: boolean;
     isRefetching: boolean;
     isStale: boolean;
-    refetch: (options?: _tanstack_react_query.RefetchOptions) => Promise<_tanstack_react_query.QueryObserverResult<string | undefined, Error>>;
-    fetchStatus: _tanstack_react_query.FetchStatus;
-} | {
-    connector: SatsConnector | undefined;
-    address: string | undefined;
-    error: Error;
-    isError: true;
-    isPending: false;
-    isLoading: false;
-    isLoadingError: true;
-    isRefetchError: false;
-    isSuccess: false;
-    status: "error";
-    dataUpdatedAt: number;
-    errorUpdatedAt: number;
-    failureCount: number;
-    failureReason: Error | null;
-    errorUpdateCount: number;
-    isFetched: boolean;
-    isFetchedAfterMount: boolean;
-    isFetching: boolean;
-    isInitialLoading: boolean;
-    isPaused: boolean;
-    isPlaceholderData: boolean;
-    isRefetching: boolean;
-    isStale: boolean;
-    refetch: (options?: _tanstack_react_query.RefetchOptions) => Promise<_tanstack_react_query.QueryObserverResult<string | undefined, Error>>;
-    fetchStatus: _tanstack_react_query.FetchStatus;
-} | {
-    connector: SatsConnector | undefined;
-    address: string | undefined;
-    error: null;
-    isError: false;
-    isPending: true;
-    isLoading: true;
-    isLoadingError: false;
-    isRefetchError: false;
-    isSuccess: false;
-    status: "pending";
-    dataUpdatedAt: number;
-    errorUpdatedAt: number;
-    failureCount: number;
-    failureReason: Error | null;
-    errorUpdateCount: number;
-    isFetched: boolean;
-    isFetchedAfterMount: boolean;
-    isFetching: boolean;
-    isInitialLoading: boolean;
-    isPaused: boolean;
-    isPlaceholderData: boolean;
-    isRefetching: boolean;
-    isStale: boolean;
-    refetch: (options?: _tanstack_react_query.RefetchOptions) => Promise<_tanstack_react_query.QueryObserverResult<string | undefined, Error>>;
-    fetchStatus: _tanstack_react_query.FetchStatus;
-} | {
-    connector: SatsConnector | undefined;
-    address: string | undefined;
-    error: null;
-    isError: false;
-    isPending: true;
-    isLoadingError: false;
-    isRefetchError: false;
-    isSuccess: false;
-    status: "pending";
-    dataUpdatedAt: number;
-    errorUpdatedAt: number;
-    failureCount: number;
-    failureReason: Error | null;
-    errorUpdateCount: number;
-    isFetched: boolean;
-    isFetchedAfterMount: boolean;
-    isFetching: boolean;
-    isLoading: boolean;
-    isInitialLoading: boolean;
-    isPaused: boolean;
-    isPlaceholderData: boolean;
-    isRefetching: boolean;
-    isStale: boolean;
-    refetch: (options?: _tanstack_react_query.RefetchOptions) => Promise<_tanstack_react_query.QueryObserverResult<string | undefined, Error>>;
+    refetch: (options?: _tanstack_react_query.RefetchOptions) => Promise<_tanstack_react_query.QueryObserverResult<[string | undefined, string[]], Error>>;
     fetchStatus: _tanstack_react_query.FetchStatus;
 };
 

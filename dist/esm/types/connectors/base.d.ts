@@ -11,6 +11,7 @@ export declare abstract class SatsConnector {
     abstract homepage: string;
     /** Whether connector is usable */
     ready: boolean;
+    accounts: Address[];
     address: Address | undefined;
     publicKey: string | undefined;
     network: WalletNetwork;
@@ -22,6 +23,7 @@ export declare abstract class SatsConnector {
     abstract isReady(): Promise<boolean>;
     disconnect(): void;
     getAccount(): string | undefined;
+    getAccounts(): string[];
     isAuthorized(): boolean;
     getNetwork(): Promise<LibNetwork>;
     getPublicKey(): Promise<string>;
