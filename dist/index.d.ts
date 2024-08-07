@@ -40,7 +40,7 @@ declare abstract class SatsConnector {
     getSigner(): RemoteSigner;
 }
 
-type AccountsChangedEvent$2 = (event: "accountsChanged", handler: (accounts: Array<string>) => void) => void;
+type AccountsChangedEvent$1 = (event: "accountsChanged", handler: (accounts: Array<string>) => void) => void;
 type Inscription$2 = {
     inscriptionId: string;
     inscriptionNumber: string;
@@ -71,8 +71,8 @@ type Network$2 = "livenet" | "testnet";
 type Bitget = {
     requestAccounts: () => Promise<string[]>;
     getAccounts: () => Promise<string[]>;
-    on: AccountsChangedEvent$2;
-    removeListener: AccountsChangedEvent$2;
+    on: AccountsChangedEvent$1;
+    removeListener: AccountsChangedEvent$1;
     getInscriptions: (cursor: number, size: number) => Promise<getInscriptionsResult$2>;
     sendInscription: (address: string, inscriptionId: string, options?: {
         feeRate: number;
@@ -184,7 +184,14 @@ declare class LeatherConnector extends SatsConnector {
     signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>;
 }
 
-type AccountsChangedEvent$1 = (event: "accountsChanged", handler: (accounts: Array<string>) => void) => void;
+type OkxWalletEvents = {
+    accountChanged: (account: {
+        address: string;
+        publicKey: string;
+    }) => void;
+    accountsChanged: (addresses: string[]) => void;
+};
+type OkxWalletEventListener = <T extends keyof OkxWalletEvents>(event: T, handler: OkxWalletEvents[T]) => void;
 type Inscription$1 = {
     inscriptionId: string;
     inscriptionNumber: string;
@@ -219,8 +226,8 @@ type Okx = {
     }>;
     requestAccounts: () => Promise<string[]>;
     getAccounts: () => Promise<string[]>;
-    on: AccountsChangedEvent$1;
-    removeListener: AccountsChangedEvent$1;
+    on: OkxWalletEventListener;
+    removeListener: OkxWalletEventListener;
     getInscriptions: (cursor: number, size: number) => Promise<getInscriptionsResult$1>;
     sendInscription: (address: string, inscriptionId: string, options?: {
         feeRate: number;
@@ -258,7 +265,10 @@ declare class OkxConnector extends SatsConnector {
     constructor(network: WalletNetwork);
     connect(): Promise<void>;
     disconnect(): void;
-    changeAccount([account]: string[]): Promise<void>;
+    changeAccount(account: {
+        address: string;
+        publicKey: string;
+    }): Promise<void>;
     isReady(): Promise<boolean>;
     signMessage(message: string): Promise<string>;
     sendToAddress(toAddress: string, amount: number): Promise<string>;

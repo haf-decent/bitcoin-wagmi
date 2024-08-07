@@ -1,7 +1,14 @@
 import { Psbt } from "bitcoinjs-lib";
 import type { WalletNetwork } from "../types";
 import { SatsConnector } from "./base";
-type AccountsChangedEvent = (event: "accountsChanged", handler: (accounts: Array<string>) => void) => void;
+type OkxWalletEvents = {
+    accountChanged: (account: {
+        address: string;
+        publicKey: string;
+    }) => void;
+    accountsChanged: (addresses: string[]) => void;
+};
+type OkxWalletEventListener = <T extends keyof OkxWalletEvents>(event: T, handler: OkxWalletEvents[T]) => void;
 type Inscription = {
     inscriptionId: string;
     inscriptionNumber: string;
@@ -36,8 +43,8 @@ type Okx = {
     }>;
     requestAccounts: () => Promise<string[]>;
     getAccounts: () => Promise<string[]>;
-    on: AccountsChangedEvent;
-    removeListener: AccountsChangedEvent;
+    on: OkxWalletEventListener;
+    removeListener: OkxWalletEventListener;
     getInscriptions: (cursor: number, size: number) => Promise<getInscriptionsResult>;
     sendInscription: (address: string, inscriptionId: string, options?: {
         feeRate: number;
@@ -75,7 +82,10 @@ export declare class OkxConnector extends SatsConnector {
     constructor(network: WalletNetwork);
     connect(): Promise<void>;
     disconnect(): void;
-    changeAccount([account]: string[]): Promise<void>;
+    changeAccount(account: {
+        address: string;
+        publicKey: string;
+    }): Promise<void>;
     isReady(): Promise<boolean>;
     signMessage(message: string): Promise<string>;
     sendToAddress(toAddress: string, amount: number): Promise<string>;

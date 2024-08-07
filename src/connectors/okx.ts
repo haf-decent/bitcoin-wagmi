@@ -23,9 +23,13 @@ const getOkxNetwork = (network: WalletNetwork): Network => {
   }
 }
 
-type AccountsChangedEvent = (
-  event: "accountsChanged",
-  handler: (accounts: Array<string>) => void
+type OkxWalletEvents = {
+  accountChanged: (account: { address: string, publicKey: string }) => void,
+  accountsChanged: (addresses: string[]) => void
+}
+type OkxWalletEventListener = <T extends keyof OkxWalletEvents>(
+  event: T,
+  handler: OkxWalletEvents[T]
 ) => void
 
 type Inscription = {
@@ -55,8 +59,8 @@ type Okx = {
   connect: () => Promise<{ address: string, publicKey: string }>,
   requestAccounts: () => Promise<string[]>,
   getAccounts: () => Promise<string[]>,
-  on: AccountsChangedEvent,
-  removeListener: AccountsChangedEvent,
+  on: OkxWalletEventListener,
+  removeListener: OkxWalletEventListener,
   getInscriptions: (cursor: number, size: number) => Promise<getInscriptionsResult>,
   sendInscription: (
     address: string,
@@ -113,27 +117,26 @@ export class OkxConnector extends SatsConnector {
       await window.okxwallet.bitcoin.switchNetwork(expectedNetwork)
     }
 
-    const [accounts, publickKey] = await Promise.all([
-      window.okxwallet.bitcoin.requestAccounts(),
-      window.okxwallet.bitcoin.getPublicKey()
-    ])
+    const { address, publicKey } = await window.okxwallet.bitcoin.connect()
+    const accounts = await window.okxwallet.bitcoin.getAccounts()
 
     this.accounts = accounts
-    this.address = accounts[0]
-    this.publicKey = publickKey
+    this.address = address
+    this.publicKey = publicKey
 
-    window.okxwallet.bitcoin.on("accountsChanged", this.changeAccount)
+    window.okxwallet.bitcoin.on("accountChanged", this.changeAccount)
   }
 
   disconnect() {
     super.disconnect()
 
-    window.okxwallet.bitcoin.removeListener("accountsChanged", this.changeAccount)
+    window.okxwallet.bitcoin.removeListener("accountChanged", this.changeAccount)
   }
 
-  async changeAccount([account]: string[]) {
-    this.address = account
-    this.publicKey = await window.okxwallet.bitcoin.getPublicKey()
+  async changeAccount(account: { address: string, publicKey: string }) {
+    this.address = account.address
+    this.publicKey = account.publicKey
+    this.accounts = await window.okxwallet.bitcoin.getAccounts()
   }
 
   async isReady() {
