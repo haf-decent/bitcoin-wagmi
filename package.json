@@ -1,6 +1,6 @@
 {
   "name": "bitcoin-wagmi",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Bitcoin wallet connect for React",
   "keywords": [
     "bitcoin",
