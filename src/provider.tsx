@@ -8,8 +8,8 @@ import React, {
 	useState
 } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import type { BitcoinNetwork } from "@gobob/types"
 
+import type { WalletNetwork } from "./types"
 import {
 	BitgetConnector,
 	LeatherConnector,
@@ -20,60 +20,76 @@ import {
 } from "./connectors"
 
 type BitcoinConfigData = {
-  connectors: SatsConnector[],
-  connector?: SatsConnector,
-  setConnector: Dispatch<SetStateAction<SatsConnector | undefined>>
+	connectors: SatsConnector[],
+	connector?: SatsConnector,
+	setConnector: Dispatch<SetStateAction<SatsConnector | undefined>>,
+	network: WalletNetwork,
+	setNetwork: Dispatch<SetStateAction<WalletNetwork>>
 }
 
-const BitcoinWagmiContext = createContext<BitcoinConfigData>({
-  connectors: [],
-  connector: undefined,
-  setConnector: () => {}
-})
+const defaultState: BitcoinConfigData = {
+	connectors: [],
+	connector: undefined,
+	setConnector: () => {},
+	network: "mainnet",
+	setNetwork: () => {}
+}
+const BitcoinWagmiContext = createContext<BitcoinConfigData>(defaultState)
 
 export const useBitcoinWagmi = (): BitcoinConfigData => {
-  const context = useContext(BitcoinWagmiContext)
+	const context = useContext(BitcoinWagmiContext)
 
-  if (context === undefined) {
-    throw new Error("useBitcoinWagmi must be used within a BitcoinWagmiConfig!")
-  }
+	if (context === undefined) {
+		throw new Error("useBitcoinWagmi must be used within a BitcoinWagmiConfig!")
+	}
 
-  return context
+	return context
 }
 
 type Props = {
-  children: ReactNode
-  network?: BitcoinNetwork
-  queryClient?: QueryClient
+	children: ReactNode,
+	initialNetwork?: WalletNetwork,
+	queryClient?: QueryClient
 }
 
 export function BitcoinWagmiProvider({
-  children,
-  network = "mainnet",
-  queryClient = new QueryClient()
+	children,
+	initialNetwork = "mainnet",
+	queryClient = new QueryClient()
 }: Props) {
-  const [connectors, setConnectors] = useState<SatsConnector[]>([])
-  const [connector, setConnector] = useState<SatsConnector>()
+	const [connectors, setConnectors] = useState<BitcoinConfigData["connectors"]>([])
+	const [connector, setConnector] = useState<BitcoinConfigData["connector"]>()
 
-  useEffect(() => {
+	const [network, setNetwork] = useState<BitcoinConfigData["network"]>(initialNetwork)
+
+	useEffect(() => {
+		// set connectors in useEffect to avoid SSR window/hydration errors
 		setConnectors([
-			new XverseConnector(network),
-			new UnisatConnector(network),
-			new OkxConnector(network),
-			new LeatherConnector(network),
-			new BitgetConnector(network)
+			new XverseConnector(initialNetwork),
+			new UnisatConnector(initialNetwork),
+			new OkxConnector(initialNetwork),
+			new LeatherConnector(initialNetwork),
+			new BitgetConnector(initialNetwork)
 		])
-  }, [])
+	}, [])
 
-  return (
-    <QueryClientProvider client={queryClient}>
-      <BitcoinWagmiContext.Provider value={{
+	useEffect(() => {
+		connectors.forEach(connector => (
+			connector.network !== network && connector.switchNetwork(network)
+		))
+	}, [connectors, network])
+
+	return (
+		<QueryClientProvider client={queryClient}>
+			<BitcoinWagmiContext.Provider value={{
 				connectors,
 				connector,
-				setConnector
+				setConnector,
+				network,
+				setNetwork
 			}}>
-        {children}
-      </BitcoinWagmiContext.Provider>
-    </QueryClientProvider>
-  )
+				{children}
+			</BitcoinWagmiContext.Provider>
+		</QueryClientProvider>
+	)
 }

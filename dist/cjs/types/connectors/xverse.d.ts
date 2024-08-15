@@ -13,6 +13,7 @@ export declare class XverseConnector extends SatsConnector {
     paymentAddress: string | undefined;
     constructor(network: WalletNetwork);
     connect(): Promise<void>;
+    switchNetwork(toNetwork: WalletNetwork): Promise<void>;
     isReady(): Promise<boolean>;
     signMessage(message: string): Promise<string>;
     sendToAddress(toAddress: string, amount: number): Promise<string>;

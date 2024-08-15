@@ -68,6 +68,7 @@ export declare class UnisatConnector extends SatsConnector {
     homepage: string;
     constructor(network: WalletNetwork);
     connect(): Promise<void>;
+    switchNetwork(toNetwork: WalletNetwork): Promise<void>;
     disconnect(): void;
     changeAccount([account]: string[]): Promise<void>;
     isReady(): Promise<boolean>;

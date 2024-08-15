@@ -21,6 +21,7 @@ export declare abstract class SatsConnector {
     abstract sendToAddress(toAddress: string, amount: number): Promise<string>;
     abstract signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>;
     abstract isReady(): Promise<boolean>;
+    switchNetwork(toNetwork: WalletNetwork): void;
     disconnect(): void;
     getAccount(): string | undefined;
     getAccounts(): string[];

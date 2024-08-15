@@ -18,7 +18,7 @@ interface SignPsbtRequestParams {
     hex: string;
     allowedSighash?: any[];
     signAtIndex?: number | number[];
-    network?: any;
+    network?: WalletNetwork;
     account?: number;
     broadcast?: boolean;
 }
@@ -34,7 +34,7 @@ type SignMessageResult = {
 type SignMessageFn = (method: "signMessage", options: {
     message: string;
     paymentType?: "p2wpkh" | "p2tr";
-    network?: any;
+    network?: WalletNetwork;
     account?: number;
 }) => Promise<Response<SignMessageResult>>;
 type SendBTCFn = (method: "sendTransfer", options: {

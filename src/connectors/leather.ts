@@ -6,141 +6,141 @@ import type { WalletNetwork } from "../types"
 import { SatsConnector } from "./base"
 
 type Response<T> = {
-  jsonrpc: string,
-  id: string,
-  result: T
+	jsonrpc: string,
+	id: string,
+	result: T
 }
 
 type AddressResult = {
-  symbol: "BTC" | "STX",
-  type: "p2wpkh" | "p2tr",
-  address: string,
-  publicKey: string,
-  tweakedPublicKey: string,
-  derivationPath: string
+	symbol: "BTC" | "STX",
+	type: "p2wpkh" | "p2tr",
+	address: string,
+	publicKey: string,
+	tweakedPublicKey: string,
+	derivationPath: string
 }
 
 interface SignPsbtRequestParams {
-  hex: string,
-  allowedSighash?: any[],
-  signAtIndex?: number | number[],
-  network?: any, // default is user"s current network
-  account?: number, // default is user"s current account
-  broadcast?: boolean // default is false - finalize/broadcast tx
+	hex: string,
+	allowedSighash?: any[],
+	signAtIndex?: number | number[],
+	network?: WalletNetwork, // default is user"s current network
+	account?: number, // default is user"s current account
+	broadcast?: boolean // default is false - finalize/broadcast tx
 }
 
 type RequestAddressesResult = {
-  addresses: AddressResult[]
+	addresses: AddressResult[]
 }
 
 type RequestAddressesFn = (method: "getAddresses") => Promise<
-  Response<RequestAddressesResult>
+	Response<RequestAddressesResult>
 >
 
 type SignMessageResult = {
-  signature: string,
-  address: string,
-  message: string
+	signature: string,
+	address: string,
+	message: string
 }
 
 type SignMessageFn = (
-  method: "signMessage",
-  options: {
-    message: string,
-    paymentType?: "p2wpkh" | "p2tr", // default is p2wpkh
-    network?: any,
-    account?: number
-  }
+	method: "signMessage",
+	options: {
+		message: string,
+		paymentType?: "p2wpkh" | "p2tr", // default is p2wpkh
+		network?: WalletNetwork,
+		account?: number
+	}
 ) => Promise<Response<SignMessageResult>>
 
 type SendBTCFn = (
-  method: "sendTransfer",
-  options: {
-    address: string,
-    amount: string,
-    network: WalletNetwork
-  }
+	method: "sendTransfer",
+	options: {
+		address: string,
+		amount: string,
+		network: WalletNetwork
+	}
 ) => Promise<Response<{ txid: string }>>
 
 type SignPsbtFn = (
-  method: "signPsbt",
-  options: SignPsbtRequestParams
+	method: "signPsbt",
+	options: SignPsbtRequestParams
 ) => Promise<Response<{ hex: string }>>
 
 declare global {
-  interface Window {
-    btc: {
-      request: SignMessageFn & RequestAddressesFn & SendBTCFn & SignPsbtFn
-    }
-  }
+	interface Window {
+		btc: {
+			request: SignMessageFn & RequestAddressesFn & SendBTCFn & SignPsbtFn
+		}
+	}
 }
 
 export class LeatherConnector extends SatsConnector {
-  id = "leather"
-  name = "Leather"
-  homepage = "https://leather.io/"
+	id = "leather"
+	name = "Leather"
+	homepage = "https://leather.io/"
 
-  derivationPath: string | undefined
+	derivationPath: string | undefined
 
-  constructor(network: WalletNetwork) {
-    super(network)
-  }
+	constructor(network: WalletNetwork) {
+		super(network)
+	}
 
-  async connect(): Promise<void> {
-    const userAddresses = await window.btc.request("getAddresses")
-    const account = userAddresses.result.addresses.find((el: { type: string }) => (
-      el.type === "p2tr"
-    ))
+	async connect(): Promise<void> {
+		const userAddresses = await window.btc.request("getAddresses")
+		const account = userAddresses.result.addresses.find((el: { type: string }) => (
+			el.type === "p2tr"
+		))
 
-    if (!account) {
-      throw new Error("Failed to connect wallet")
-    }
+		if (!account) {
+			throw new Error("Failed to connect wallet")
+		}
 
-    if (!isValidBTCAddress(this.network as any, account.address)) {
-      throw new Error(`Invalid Network. Please switch to bitcoin ${this.network}.`)
-    }
+		if (!isValidBTCAddress(this.network as any, account.address)) {
+			throw new Error(`Invalid Network. Please switch to bitcoin ${this.network}.`)
+		}
 
-    this.accounts = userAddresses.result.addresses.map(a => a.address)
-    this.address = account.address
-    this.publicKey = account.publicKey
-    this.derivationPath = account.derivationPath
-  }
+		this.accounts = userAddresses.result.addresses.map(a => a.address)
+		this.address = account.address
+		this.publicKey = account.publicKey
+		this.derivationPath = account.derivationPath
+	}
 
-  async isReady() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    this.ready = !!(window as any).LeatherProvider
+	async isReady() {
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		this.ready = !!(window as any).LeatherProvider
 
-    return this.ready
-  }
+		return this.ready
+	}
 
-  async signMessage(message: string) {
-    const resp = await window.btc.request("signMessage", {
-      message,
-      network: this.network
-    })
+	async signMessage(message: string) {
+		const resp = await window.btc.request("signMessage", {
+			message,
+			network: this.network
+		})
 
-    return resp.result.signature
-  }
+		return resp.result.signature
+	}
 
-  async sendToAddress(toAddress: string, amount: number): Promise<string> {
-    const resp = await window.btc.request("sendTransfer", {
-      address: toAddress,
-      amount: amount.toString(),
-      network: this.network
-    })
+	async sendToAddress(toAddress: string, amount: number): Promise<string> {
+		const resp = await window.btc.request("sendTransfer", {
+			address: toAddress,
+			amount: amount.toString(),
+			network: this.network
+		})
 
-    return resp.result.txid
-  }
+		return resp.result.txid
+	}
 
-  async signInput(inputIndex: number, psbt: Psbt): Promise<Psbt> {
-    const response = await window.btc.request("signPsbt", {
-      hex: psbt.toHex(),
-      signAtIndex: inputIndex,
-      // account: extractAccountNumber(this.derivationPath as string),
-      network: this.network,
-      broadcast: false
-    })
+	async signInput(inputIndex: number, psbt: Psbt): Promise<Psbt> {
+		const response = await window.btc.request("signPsbt", {
+			hex: psbt.toHex(),
+			signAtIndex: inputIndex,
+			// account: extractAccountNumber(this.derivationPath as string),
+			network: this.network,
+			broadcast: false
+		})
 
-    return Psbt.fromHex(response.result.hex)
-  }
+		return Psbt.fromHex(response.result.hex)
+	}
 }

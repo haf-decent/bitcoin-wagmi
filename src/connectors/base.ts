@@ -10,197 +10,201 @@ const toXOnly = (pubKey: Buffer) => (pubKey.length === 32 ? pubKey : pubKey.suba
 const encoder = new TextEncoder()
 const createTextInscription = (text: string) => {
 	const contentType = Buffer.from(encoder.encode("text/plain;charset=utf-8"))
-  const content = Buffer.from(encoder.encode(text))
-  return { contentType, content }
+	const content = Buffer.from(encoder.encode(text))
+	return { contentType, content }
 }
 
 type Address = string
 
 export abstract class SatsConnector {
-  /** Unique connector id */
-  abstract readonly id: string
-  /** Connector name */
-  abstract readonly name: string
-  /** Extension or Snap homepage */
-  abstract homepage: string
+	/** Unique connector id */
+	abstract readonly id: string
+	/** Connector name */
+	abstract readonly name: string
+	/** Extension or Snap homepage */
+	abstract homepage: string
 
-  /** Whether connector is usable */
-  ready: boolean = false
+	/** Whether connector is usable */
+	ready: boolean = false
 
-  accounts: Address[] = []
-  address: Address | undefined = ""
+	accounts: Address[] = []
+	address: Address | undefined = ""
 
-  publicKey: string | undefined
+	publicKey: string | undefined
 
-  network: WalletNetwork
+	network: WalletNetwork
 
-  constructor(network: WalletNetwork) {
-    this.network = network
-  }
+	constructor(network: WalletNetwork) {
+		this.network = network
+	}
 
-  abstract connect(): Promise<void>
+	abstract connect(): Promise<void>
 
-  abstract signMessage(message: string): Promise<string>
+	abstract signMessage(message: string): Promise<string>
 
-  abstract sendToAddress(toAddress: string, amount: number): Promise<string>
+	abstract sendToAddress(toAddress: string, amount: number): Promise<string>
 
-  abstract signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>
+	abstract signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>
 
-  abstract isReady(): Promise<boolean>
+	abstract isReady(): Promise<boolean>
 
-  disconnect() {
-    this.accounts = []
-    this.address = undefined
-    this.publicKey = undefined
-  }
+	switchNetwork(toNetwork: WalletNetwork) {
+		this.network = toNetwork
+	}
 
-  getAccount(): string | undefined {
-    return this.address
-  }
+	disconnect() {
+		this.accounts = []
+		this.address = undefined
+		this.publicKey = undefined
+	}
 
-  getAccounts(): string[] {
-    return this.accounts
-  }
+	getAccount(): string | undefined {
+		return this.address
+	}
 
-  isAuthorized(): boolean {
-    const address = this.getAccount()
+	getAccounts(): string[] {
+		return this.accounts
+	}
 
-    return !!address
-  }
+	isAuthorized(): boolean {
+		const address = this.getAccount()
 
-  // Get bitcoinlib-js network
-  async getNetwork(): Promise<LibNetwork> {
-    switch (this.network) {
-      case "mainnet":
-        return networks.bitcoin
-      case "testnet":
-        return networks.testnet
-      default:
-        throw new Error("Unknown network")
-    }
-  }
+		return !!address
+	}
 
-  async getPublicKey(): Promise<string> {
-    if (!this.publicKey) {
-      throw new Error("Something went wrong while connecting")
-    }
+	// Get bitcoinlib-js network
+	async getNetwork(): Promise<LibNetwork> {
+		switch (this.network) {
+			case "mainnet":
+				return networks.bitcoin
+			case "testnet":
+				return networks.testnet
+			default:
+				throw new Error("Unknown network")
+		}
+	}
 
-    return this.publicKey
-  }
+	async getPublicKey(): Promise<string> {
+		if (!this.publicKey) {
+			throw new Error("Something went wrong while connecting")
+		}
 
-  async sendInscription(address: string, inscriptionId: string, feeRate: number = 1) {
-    if (!this.address || !this.publicKey) {
-      throw new Error("Connect wallet")
-    }
+		return this.publicKey
+	}
 
-    const network = await this.getNetwork()
+	async sendInscription(address: string, inscriptionId: string, feeRate: number = 1) {
+		if (!this.address || !this.publicKey) {
+			throw new Error("Connect wallet")
+		}
 
-    const electrsClient = new DefaultEsploraClient(this.network as string)
+		const network = await this.getNetwork()
 
-    const utxos = await electrsClient.getAddressUtxos(this.address)
+		const electrsClient = new DefaultEsploraClient(this.network as string)
 
-    const inscriptionUtxo = await findUtxoForInscriptionId(
+		const utxos = await electrsClient.getAddressUtxos(this.address)
+
+		const inscriptionUtxo = await findUtxoForInscriptionId(
 			electrsClient,
 			utxos,
 			inscriptionId
 		)
 
-    if (inscriptionUtxo === undefined) {
-      throw Error(
-        `Unable to find utxo owned by address [${this.address}] containing inscription id [${inscriptionId}]`
-      )
-    }
+		if (inscriptionUtxo === undefined) {
+			throw Error(
+				`Unable to find utxo owned by address [${this.address}] containing inscription id [${inscriptionId}]`
+			)
+		}
 
-    const txHex = await electrsClient.getTransactionHex(inscriptionUtxo.txid)
-    const utx = Transaction.fromHex(txHex)
+		const txHex = await electrsClient.getTransactionHex(inscriptionUtxo.txid)
+		const utx = Transaction.fromHex(txHex)
 
-    const witnessUtxo = {
-      script: utx.outs[inscriptionUtxo.vout].script,
-      value: inscriptionUtxo.value
-    }
+		const witnessUtxo = {
+			script: utx.outs[inscriptionUtxo.vout].script,
+			value: inscriptionUtxo.value
+		}
 
-    const nonWitnessUtxo = utx.toBuffer()
+		const nonWitnessUtxo = utx.toBuffer()
 
-    let psbt = new Psbt({
-      network
-    })
+		let psbt = new Psbt({
+			network
+		})
 
-    psbt.addInput({
-      hash: inscriptionUtxo.txid,
-      index: inscriptionUtxo.vout,
-      witnessUtxo,
-      nonWitnessUtxo,
-      tapInternalKey: toXOnly(Buffer.from(this.publicKey, "hex"))
-    })
+		psbt.addInput({
+			hash: inscriptionUtxo.txid,
+			index: inscriptionUtxo.vout,
+			witnessUtxo,
+			nonWitnessUtxo,
+			tapInternalKey: toXOnly(Buffer.from(this.publicKey, "hex"))
+		})
 
-    const txSize = estimateTxSize(network, address)
-    const fee = txSize * feeRate
+		const txSize = estimateTxSize(network, address)
+		const fee = txSize * feeRate
 
-    psbt.addOutput({
-      address,
-      value: inscriptionUtxo.value - fee
-    })
+		psbt.addOutput({
+			address,
+			value: inscriptionUtxo.value - fee
+		})
 
-    psbt = await this.signInput(0, psbt)
+		psbt = await this.signInput(0, psbt)
 
-    psbt.finalizeAllInputs()
+		psbt.finalizeAllInputs()
 
-    return electrsClient.broadcastTx(psbt.extractTransaction().toHex())
-  }
+		return electrsClient.broadcastTx(psbt.extractTransaction().toHex())
+	}
 
-  async getTransaction(txId: string): Promise<Transaction> {
-    const electrsClient = new DefaultEsploraClient(this.network as string)
+	async getTransaction(txId: string): Promise<Transaction> {
+		const electrsClient = new DefaultEsploraClient(this.network as string)
 
-    return retry(
-      async (bail) => {
-        // if anything throws, we retry
-        const txHex = await electrsClient.getTransactionHex(txId)
+		return retry(
+			async (bail) => {
+				// if anything throws, we retry
+				const txHex = await electrsClient.getTransactionHex(txId)
 
-        if (!txHex) {
-          bail(new Error("Failed"))
-        }
+				if (!txHex) {
+					bail(new Error("Failed"))
+				}
 
-        return Transaction.fromHex(txHex)
-      },
-      {
-        retries: 20,
-        minTimeout: 2000,
-        maxTimeout: 5000
-      } as any
-    )
-  }
+				return Transaction.fromHex(txHex)
+			},
+			{
+				retries: 20,
+				minTimeout: 2000,
+				maxTimeout: 5000
+			} as any
+		)
+	}
 
-  async inscribe(contentType: "text" | "image", content: string): Promise<string> {
-    if (!this.address) {
-      throw new Error("Something went wrong while connecting")
-    }
+	async inscribe(contentType: "text" | "image", content: string): Promise<string> {
+		if (!this.address) {
+			throw new Error("Something went wrong while connecting")
+		}
 
-    const electrsClient = new DefaultEsploraClient(this.network as string)
+		const electrsClient = new DefaultEsploraClient(this.network as string)
 
-    let inscription
+		let inscription
 
-    if (contentType === "image") {
-      const buffer = Buffer.from(content, "base64")
+		if (contentType === "image") {
+			const buffer = Buffer.from(content, "base64")
 
-      inscription = createImageInscription(buffer)
-    } else {
-      inscription = createTextInscription(content)
-    }
+			inscription = createImageInscription(buffer)
+		} else {
+			inscription = createTextInscription(content)
+		}
 
-    const feeRate = await electrsClient.getFeeEstimate(6)
+		const feeRate = await electrsClient.getFeeEstimate(6)
 
-    const inscribeTx = await inscribeData(
+		const inscribeTx = await inscribeData(
 			this.getSigner(),
 			this.address,
 			feeRate,
 			inscription
 		)
 
-    return electrsClient.broadcastTx(inscribeTx.toHex())
-  }
+		return electrsClient.broadcastTx(inscribeTx.toHex())
+	}
 
-  // lib needs this signer
-  getSigner(): RemoteSigner {
-    return this
-  }
+	// lib needs this signer
+	getSigner(): RemoteSigner {
+		return this
+	}
 }

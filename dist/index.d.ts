@@ -28,6 +28,7 @@ declare abstract class SatsConnector {
     abstract sendToAddress(toAddress: string, amount: number): Promise<string>;
     abstract signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>;
     abstract isReady(): Promise<boolean>;
+    switchNetwork(toNetwork: WalletNetwork): void;
     disconnect(): void;
     getAccount(): string | undefined;
     getAccounts(): string[];
@@ -109,8 +110,9 @@ declare class BitgetConnector extends SatsConnector {
     homepage: string;
     constructor(network: WalletNetwork);
     connect(): Promise<void>;
+    switchNetwork(toNetwork: WalletNetwork): Promise<void>;
     disconnect(): void;
-    changeAccount([account]: string[]): Promise<void>;
+    changeAccount(accounts: string[]): Promise<void>;
     isReady(): Promise<boolean>;
     signMessage(message: string): Promise<string>;
     sendToAddress(toAddress: string, amount: number): Promise<string>;
@@ -135,7 +137,7 @@ interface SignPsbtRequestParams {
     hex: string;
     allowedSighash?: any[];
     signAtIndex?: number | number[];
-    network?: any;
+    network?: WalletNetwork;
     account?: number;
     broadcast?: boolean;
 }
@@ -151,7 +153,7 @@ type SignMessageResult = {
 type SignMessageFn = (method: "signMessage", options: {
     message: string;
     paymentType?: "p2wpkh" | "p2tr";
-    network?: any;
+    network?: WalletNetwork;
     account?: number;
 }) => Promise<Response<SignMessageResult>>;
 type SendBTCFn = (method: "sendTransfer", options: {
@@ -264,6 +266,7 @@ declare class OkxConnector extends SatsConnector {
     homepage: string;
     constructor(network: WalletNetwork);
     connect(): Promise<void>;
+    switchNetwork(toNetwork: WalletNetwork): Promise<void>;
     disconnect(): void;
     changeAccount(account: {
         address: string;
@@ -343,6 +346,7 @@ declare class UnisatConnector extends SatsConnector {
     homepage: string;
     constructor(network: WalletNetwork);
     connect(): Promise<void>;
+    switchNetwork(toNetwork: WalletNetwork): Promise<void>;
     disconnect(): void;
     changeAccount([account]: string[]): Promise<void>;
     isReady(): Promise<boolean>;
@@ -364,6 +368,7 @@ declare class XverseConnector extends SatsConnector {
     paymentAddress: string | undefined;
     constructor(network: WalletNetwork);
     connect(): Promise<void>;
+    switchNetwork(toNetwork: WalletNetwork): Promise<void>;
     isReady(): Promise<boolean>;
     signMessage(message: string): Promise<string>;
     sendToAddress(toAddress: string, amount: number): Promise<string>;
@@ -375,14 +380,16 @@ type BitcoinConfigData = {
     connectors: SatsConnector[];
     connector?: SatsConnector;
     setConnector: Dispatch<SetStateAction<SatsConnector | undefined>>;
+    network: WalletNetwork;
+    setNetwork: Dispatch<SetStateAction<WalletNetwork>>;
 };
 declare const useBitcoinWagmi: () => BitcoinConfigData;
 type Props = {
     children: ReactNode;
-    network?: BitcoinNetwork;
+    initialNetwork?: WalletNetwork;
     queryClient?: QueryClient;
 };
-declare function BitcoinWagmiProvider({ children, network, queryClient }: Props): React.JSX.Element;
+declare function BitcoinWagmiProvider({ children, initialNetwork, queryClient }: Props): React.JSX.Element;
 
 declare function useBitcoinAccount(): {
     connector: SatsConnector | undefined;

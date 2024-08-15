@@ -81,6 +81,7 @@ export declare class OkxConnector extends SatsConnector {
     homepage: string;
     constructor(network: WalletNetwork);
     connect(): Promise<void>;
+    switchNetwork(toNetwork: WalletNetwork): Promise<void>;
     disconnect(): void;
     changeAccount(account: {
         address: string;
