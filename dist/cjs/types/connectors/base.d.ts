@@ -1,7 +1,10 @@
-import { type Network as LibNetwork, Psbt, Transaction } from "bitcoinjs-lib";
-import { type RemoteSigner } from "@gobob/bob-sdk";
+import { Psbt } from "bitcoinjs-lib";
 import type { WalletNetwork } from "../types";
 type Address = string;
+type Events = {
+    accountChanged: ((account: string, accounts: string[], publicKey: string) => void)[];
+    networkChanged: ((network: WalletNetwork) => void)[];
+};
 export declare abstract class SatsConnector {
     /** Unique connector id */
     abstract readonly id: string;
@@ -15,22 +18,22 @@ export declare abstract class SatsConnector {
     address: Address | undefined;
     publicKey: string | undefined;
     network: WalletNetwork;
+    listeners: Events;
     constructor(network: WalletNetwork);
-    abstract connect(): Promise<void>;
-    abstract signMessage(message: string): Promise<string>;
-    abstract sendToAddress(toAddress: string, amount: number): Promise<string>;
-    abstract signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>;
     abstract isReady(): Promise<boolean>;
-    switchNetwork(toNetwork: WalletNetwork): void;
-    disconnect(): void;
+    abstract connect(): Promise<void>;
     getAccount(): string | undefined;
     getAccounts(): string[];
     isAuthorized(): boolean;
-    getNetwork(): Promise<LibNetwork>;
+    on<T extends keyof Events>(event: T, handler: Events[T][0]): () => void;
+    switchNetwork(toNetwork: WalletNetwork): Promise<void>;
+    abstract signMessage(message: string): Promise<string>;
+    abstract sendToAddress(toAddress: string, amount: number): Promise<string>;
+    abstract signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>;
+    abstract sendInscription(address: string, inscriptionId: string, feeRate?: number): Promise<string>;
+    disconnect(): void;
+    getNetwork(): WalletNetwork;
     getPublicKey(): Promise<string>;
-    sendInscription(address: string, inscriptionId: string, feeRate?: number): Promise<string>;
-    getTransaction(txId: string): Promise<Transaction>;
-    inscribe(contentType: "text" | "image", content: string): Promise<string>;
-    getSigner(): RemoteSigner;
+    getSigner(): SatsConnector;
 }
 export {};

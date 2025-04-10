@@ -8,15 +8,30 @@ import {
 	signTransaction,
 	signMessage as signMessageXverse
 } from "sats-connect"
-import { isValidBTCAddress } from "@gobob/utils"
 
 import type { WalletNetwork } from "../types"
 
 import { SatsConnector } from "./base"
 
-const getWalletNetwork = (network: WalletNetwork) => ({
-	type: network === "mainnet" ? BitcoinNetworkType.Mainnet : BitcoinNetworkType.Testnet
-})
+const getXverseNetwork = (network: WalletNetwork): BitcoinNetworkType => {
+	switch(network) {
+		case "signet": return BitcoinNetworkType.Signet
+		case "testnet": return BitcoinNetworkType.Testnet
+		case "mainnet":
+		default:
+			return BitcoinNetworkType.Mainnet
+	}
+}
+
+// const getWalletNetwork = (network: BitcoinNetworkType): WalletNetwork => {
+// 	switch(network) {
+// 		case BitcoinNetworkType.Signet: return "signet"
+// 		case BitcoinNetworkType.Testnet: return "testnet"
+// 		case BitcoinNetworkType.Mainnet:
+// 		default:
+// 			return "mainnet"
+// 	}
+// }
 
 declare global {
 	interface Window {
@@ -38,38 +53,44 @@ export class XverseConnector extends SatsConnector {
 	}
 
 	async connect(): Promise<void> {
-		return new Promise(async (resolve, reject) => {
-			await getAddress({
+		this.disconnect()
+
+		return new Promise((resolve, reject) => {
+			getAddress({
 				payload: {
 					purposes: [AddressPurpose.Ordinals, AddressPurpose.Payment],
 					message: "Address for receiving Ordinals and payments",
-					network: getWalletNetwork(this.network)
+					network: {
+						type: getXverseNetwork(this.network)
+					}
 				},
-				onFinish: (res) => {
-					const { address, publicKey } = res.addresses.find(
-						(address) => address.purpose === AddressPurpose.Ordinals
-					) as {
+				onFinish: res => {
+					const { address, publicKey } = res.addresses.find(address => (
+						address.purpose === AddressPurpose.Ordinals
+					)) as {
 						address: string
 						publicKey: string
 						purpose: string
 					}
-
-					const { address: paymentAddress } = res.addresses.find(
-						(address) => address.purpose === AddressPurpose.Payment
-					) as {
+					const { address: paymentAddress } = res.addresses.find(address => (
+						address.purpose === AddressPurpose.Payment
+					)) as {
 						address: string
 						publicKey: string
 						purpose: string
-					}
-
-					if (!isValidBTCAddress(this.network as any, address)) {
-						throw new Error(`Invalid Network. Please switch to bitcoin ${this.network}.`)
 					}
 
 					this.accounts = res.addresses.map(a => a.address)
 					this.address = address
 					this.paymentAddress = paymentAddress
 					this.publicKey = publicKey
+
+					this.listeners.accountChanged.forEach(cb => cb(
+						this.address || "",
+						this.accounts,
+						this.publicKey || ""
+					))
+
 					resolve()
 				},
 				onCancel: () => {
@@ -80,7 +101,7 @@ export class XverseConnector extends SatsConnector {
 	}
 
 	async switchNetwork(toNetwork: WalletNetwork): Promise<void> {
-		super.switchNetwork(toNetwork)
+		await super.switchNetwork(toNetwork)
 		if (!this.address) return
 
 		return this.connect()
@@ -99,7 +120,9 @@ export class XverseConnector extends SatsConnector {
 			}
 			await signMessageXverse({
 				payload: {
-					network: getWalletNetwork(this.network),
+					network: {
+						type: getXverseNetwork(this.network)
+					},
 					address: this.address,
 					message
 				},
@@ -121,7 +144,9 @@ export class XverseConnector extends SatsConnector {
 
 			await sendBtcTransaction({
 				payload: {
-					network: getWalletNetwork(this.network),
+					network: {
+						type: getXverseNetwork(this.network)
+					},
 					recipients: [{ address: toAddress, amountSats: BigInt(amount) }],
 					senderAddress: this.paymentAddress
 				},
@@ -139,7 +164,9 @@ export class XverseConnector extends SatsConnector {
 		return new Promise(async (resolve, reject) => {
 			await createInscription({
 				payload: {
-					network: getWalletNetwork(this.network),
+					network: {
+						type: getXverseNetwork(this.network)
+					},
 					content,
 					contentType: contentType === "text" ? "text/plaincharset=utf-8" : "image/jpeg",
 					payloadType: contentType === "text" ? "PLAIN_TEXT" : "BASE_64"
@@ -160,7 +187,9 @@ export class XverseConnector extends SatsConnector {
 
 			await signTransaction({
 				payload: {
-					network: getWalletNetwork(this.network),
+					network: {
+						type: getXverseNetwork(this.network)
+					},
 					message: "Sign Transaction",
 					psbtBase64: psbt.toBase64(),
 					broadcast: false,
@@ -177,5 +206,9 @@ export class XverseConnector extends SatsConnector {
 				onCancel: () => reject(new Error("Canceled"))
 			})
 		})
+	}
+
+	async sendInscription(): Promise<string> {
+		throw new Error(`sendInscription not implemented`)
 	}
 }

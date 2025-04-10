@@ -1,8 +1,7 @@
-import { WalletNetwork } from "../types";
 export declare function useBitcoinNetwork(): {
-    network: WalletNetwork;
-    switchNetwork: import("@tanstack/react-query").UseMutateFunction<void, Error, WalletNetwork, unknown>;
-    switchNetworkAsync: import("@tanstack/react-query").UseMutateAsyncFunction<void, Error, WalletNetwork, unknown>;
+    network: import("..").WalletNetwork;
+    switchNetwork: import("@tanstack/react-query").UseMutateFunction<void, Error, import("..").WalletNetwork, unknown>;
+    switchNetworkAsync: import("@tanstack/react-query").UseMutateAsyncFunction<void, Error, import("..").WalletNetwork, unknown>;
     data: undefined;
     variables: undefined;
     error: null;
@@ -18,11 +17,11 @@ export declare function useBitcoinNetwork(): {
     isPaused: boolean;
     submittedAt: number;
 } | {
-    network: WalletNetwork;
-    switchNetwork: import("@tanstack/react-query").UseMutateFunction<void, Error, WalletNetwork, unknown>;
-    switchNetworkAsync: import("@tanstack/react-query").UseMutateAsyncFunction<void, Error, WalletNetwork, unknown>;
+    network: import("..").WalletNetwork;
+    switchNetwork: import("@tanstack/react-query").UseMutateFunction<void, Error, import("..").WalletNetwork, unknown>;
+    switchNetworkAsync: import("@tanstack/react-query").UseMutateAsyncFunction<void, Error, import("..").WalletNetwork, unknown>;
     data: undefined;
-    variables: WalletNetwork;
+    variables: import("..").WalletNetwork;
     error: null;
     isError: false;
     isIdle: false;
@@ -36,12 +35,12 @@ export declare function useBitcoinNetwork(): {
     isPaused: boolean;
     submittedAt: number;
 } | {
-    network: WalletNetwork;
-    switchNetwork: import("@tanstack/react-query").UseMutateFunction<void, Error, WalletNetwork, unknown>;
-    switchNetworkAsync: import("@tanstack/react-query").UseMutateAsyncFunction<void, Error, WalletNetwork, unknown>;
+    network: import("..").WalletNetwork;
+    switchNetwork: import("@tanstack/react-query").UseMutateFunction<void, Error, import("..").WalletNetwork, unknown>;
+    switchNetworkAsync: import("@tanstack/react-query").UseMutateAsyncFunction<void, Error, import("..").WalletNetwork, unknown>;
     data: undefined;
     error: Error;
-    variables: WalletNetwork;
+    variables: import("..").WalletNetwork;
     isError: true;
     isIdle: false;
     isPending: false;
@@ -54,12 +53,12 @@ export declare function useBitcoinNetwork(): {
     isPaused: boolean;
     submittedAt: number;
 } | {
-    network: WalletNetwork;
-    switchNetwork: import("@tanstack/react-query").UseMutateFunction<void, Error, WalletNetwork, unknown>;
-    switchNetworkAsync: import("@tanstack/react-query").UseMutateAsyncFunction<void, Error, WalletNetwork, unknown>;
+    network: import("..").WalletNetwork;
+    switchNetwork: import("@tanstack/react-query").UseMutateFunction<void, Error, import("..").WalletNetwork, unknown>;
+    switchNetworkAsync: import("@tanstack/react-query").UseMutateAsyncFunction<void, Error, import("..").WalletNetwork, unknown>;
     data: void;
     error: null;
-    variables: WalletNetwork;
+    variables: import("..").WalletNetwork;
     isError: false;
     isIdle: false;
     isPending: false;

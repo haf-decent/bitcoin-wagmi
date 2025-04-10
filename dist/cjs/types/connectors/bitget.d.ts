@@ -1,6 +1,7 @@
 import { Psbt } from "bitcoinjs-lib";
 import type { WalletNetwork } from "../types";
 import { SatsConnector } from "./base";
+type BitgetNetwork = "livenet" | "testnet" | "signet";
 type AccountsChangedEvent = (event: "accountsChanged", handler: (accounts: Array<string>) => void) => void;
 type Inscription = {
     inscriptionId: string;
@@ -28,7 +29,6 @@ type Balance = {
     unconfirmed: number;
     total: number;
 };
-type Network = "livenet" | "testnet";
 type Bitget = {
     requestAccounts: () => Promise<string[]>;
     getAccounts: () => Promise<string[]>;
@@ -38,8 +38,8 @@ type Bitget = {
     sendInscription: (address: string, inscriptionId: string, options?: {
         feeRate: number;
     }) => Promise<SendInscriptionsResult>;
-    switchNetwork: (network: "livenet" | "testnet") => Promise<void>;
-    getNetwork: () => Promise<Network>;
+    switchNetwork: (network: BitgetNetwork) => Promise<void>;
+    getNetwork: () => Promise<BitgetNetwork>;
     getPublicKey: () => Promise<string>;
     getBalance: () => Promise<Balance>;
     signMessage: (message: string) => Promise<string>;

@@ -1,6 +1,7 @@
 import { Psbt } from "bitcoinjs-lib";
 import { WalletNetwork } from "../types";
 import { SatsConnector } from "./base";
+type UnisatNetwork = "livenet" | "testnet" | "signet";
 type AccountsChangedEvent = (event: "accountsChanged", handler: (accounts: Array<string>) => void) => void;
 type Inscription = {
     inscriptionId: string;
@@ -28,7 +29,6 @@ type Balance = {
     unconfirmed: number;
     total: number;
 };
-type Network = "livenet" | "testnet";
 type Unisat = {
     requestAccounts: () => Promise<string[]>;
     getAccounts: () => Promise<string[]>;
@@ -38,8 +38,8 @@ type Unisat = {
     sendInscription: (address: string, inscriptionId: string, options?: {
         feeRate: number;
     }) => Promise<SendInscriptionsResult>;
-    switchNetwork: (network: "livenet" | "testnet") => Promise<void>;
-    getNetwork: () => Promise<Network>;
+    switchNetwork: (network: UnisatNetwork) => Promise<void>;
+    getNetwork: () => Promise<UnisatNetwork>;
     getPublicKey: () => Promise<string>;
     getBalance: () => Promise<Balance>;
     signMessage: (message: string) => Promise<string>;
@@ -70,7 +70,7 @@ export declare class UnisatConnector extends SatsConnector {
     connect(): Promise<void>;
     switchNetwork(toNetwork: WalletNetwork): Promise<void>;
     disconnect(): void;
-    changeAccount([account]: string[]): Promise<void>;
+    changeAccount(accounts: string[]): Promise<void>;
     isReady(): Promise<boolean>;
     signMessage(message: string): Promise<string>;
     sendToAddress(toAddress: string, amount: number): Promise<string>;

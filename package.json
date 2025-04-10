@@ -1,6 +1,6 @@
 {
   "name": "bitcoin-wagmi",
-  "version": "2.5.1",
+  "version": "3.0.2",
   "description": "Bitcoin wallet connect for React",
   "keywords": [
     "bitcoin",
@@ -38,7 +38,6 @@
     "@rollup/plugin-node-resolve": "^15.2.3",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.6",
-    "@types/async-retry": "^1.4.8",
     "@types/node": "^20.14.12",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
@@ -51,11 +50,7 @@
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@gobob/bob-sdk": "^1.3.0",
-    "@gobob/types": "^0.0.2",
-    "@gobob/utils": "^0.0.2",
     "@tanstack/react-query": "^5.51.11",
-    "async-retry": "^1.3.3",
     "bitcoinjs-lib": "^6.1.6",
     "sats-connect": "^3.3.0"
   }

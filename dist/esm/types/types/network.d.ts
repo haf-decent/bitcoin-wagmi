@@ -1,2 +1,1 @@
-import type { BitcoinNetwork } from '@gobob/types';
-export type WalletNetwork = Omit<BitcoinNetwork, 'regtest'>;
+export type WalletNetwork = "mainnet" | "testnet" | "signet";

@@ -1,4 +1,5 @@
 export declare function useBitcoinAccount(): {
+    refetch: (options?: import("@tanstack/react-query").RefetchOptions) => Promise<import("@tanstack/react-query").QueryObserverResult<[string | undefined, string[]], Error>>;
     connector: import("..").SatsConnector | undefined;
     address: string | undefined;
     addresses: string[];
@@ -9,6 +10,7 @@ export declare function useBitcoinAccount(): {
     isLoadingError: false;
     isRefetchError: true;
     isSuccess: false;
+    isPlaceholderData: false;
     status: "error";
     dataUpdatedAt: number;
     errorUpdatedAt: number;
@@ -20,12 +22,12 @@ export declare function useBitcoinAccount(): {
     isFetching: boolean;
     isInitialLoading: boolean;
     isPaused: boolean;
-    isPlaceholderData: boolean;
     isRefetching: boolean;
     isStale: boolean;
-    refetch: (options?: import("@tanstack/react-query").RefetchOptions) => Promise<import("@tanstack/react-query").QueryObserverResult<[string | undefined, string[]], Error>>;
     fetchStatus: import("@tanstack/react-query").FetchStatus;
+    promise: Promise<[string | undefined, string[]]>;
 } | {
+    refetch: (options?: import("@tanstack/react-query").RefetchOptions) => Promise<import("@tanstack/react-query").QueryObserverResult<[string | undefined, string[]], Error>>;
     connector: import("..").SatsConnector | undefined;
     address: string | undefined;
     addresses: string[];
@@ -36,6 +38,7 @@ export declare function useBitcoinAccount(): {
     isLoadingError: false;
     isRefetchError: false;
     isSuccess: true;
+    isPlaceholderData: false;
     status: "success";
     dataUpdatedAt: number;
     errorUpdatedAt: number;
@@ -47,9 +50,8 @@ export declare function useBitcoinAccount(): {
     isFetching: boolean;
     isInitialLoading: boolean;
     isPaused: boolean;
-    isPlaceholderData: boolean;
     isRefetching: boolean;
     isStale: boolean;
-    refetch: (options?: import("@tanstack/react-query").RefetchOptions) => Promise<import("@tanstack/react-query").QueryObserverResult<[string | undefined, string[]], Error>>;
     fetchStatus: import("@tanstack/react-query").FetchStatus;
+    promise: Promise<[string | undefined, string[]]>;
 };

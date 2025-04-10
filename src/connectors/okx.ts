@@ -4,22 +4,23 @@ import type { WalletNetwork } from "../types"
 
 import { SatsConnector } from "./base"
 
-const getLibNetwork = (network: Network): WalletNetwork => {
-	switch (network) {
-		case "livenet":
-			return "mainnet"
-		case "testnet":
-			return "testnet"
+type OkxWalletKey = "bitcoin" | "bitcoinTestnet" | "bitcoinSignet"
+
+const getOkxWalletKey = (network: WalletNetwork): OkxWalletKey => {
+	switch(network) {
+		case "signet": return "bitcoinSignet"
+		case "testnet": return "bitcoinTestnet"
+		case "mainnet":
+		default: return "bitcoin"
 	}
 }
 
-const getOkxNetwork = (network: WalletNetwork): Network => {
-	switch (network) {
-		default:
-		case "mainnet":
-			return "livenet"
-		case "testnet":
-			return "testnet"
+type OkxNetwork = "livenet" | "testnet" | "signet"
+
+const getWalletNetwork = (network: OkxNetwork) => {
+	switch(network) {
+		case "livenet": return "mainnet"
+		default: return network
 	}
 }
 
@@ -53,8 +54,6 @@ type SendInscriptionsResult = { txid: string }
 
 type Balance = { confirmed: number, unconfirmed: number, total: number }
 
-type Network = "livenet" | "testnet"
-
 type Okx = {
 	connect: () => Promise<{ address: string, publicKey: string }>,
 	requestAccounts: () => Promise<string[]>,
@@ -67,8 +66,8 @@ type Okx = {
 		inscriptionId: string,
 		options?: { feeRate: number }
 	) => Promise<SendInscriptionsResult>,
-	switchNetwork: (network: "livenet" | "testnet") => Promise<void>,
-	getNetwork: () => Promise<Network>,
+	switchNetwork: (network: OkxNetwork) => Promise<void>,
+	getNetwork: () => Promise<OkxNetwork>,
 	getPublicKey: () => Promise<string>,
 	getBalance: () => Promise<Balance>,
 	signMessage: (message: string) => Promise<string>,
@@ -94,7 +93,11 @@ type Okx = {
 
 declare global {
 	interface Window {
-		okxwallet: { bitcoin: Okx }
+		okxwallet: {
+			bitcoin: Okx,
+			bitcoinTestnet: Pick<Okx, "connect" | "getAccounts" | "signMessage" | "signPsbt">,
+			bitcoinSignet: Pick<Okx, "connect" | "getAccounts" | "signMessage" | "signPsbt">
+		}
 	}
 }
 
@@ -102,23 +105,20 @@ export class OkxConnector extends SatsConnector {
 	id = "okx"
 	name = "OKX"
 	homepage = "https://okx.com/"
+	key: "bitcoin" | "bitcoinTestnet" | "bitcoinSignet"
 
 	constructor(network: WalletNetwork) {
 		super(network)
+		this.key = getOkxWalletKey(this.network)
+
+		this.changeAccount = this.changeAccount.bind(this)
 	}
 
 	async connect(): Promise<void> {
-		const network = await window.okxwallet.bitcoin.getNetwork()
-		const mappedNetwork = getLibNetwork(network)
+		this.key = getOkxWalletKey(this.network)
 
-		if (mappedNetwork !== this.network) {
-			const expectedNetwork = getOkxNetwork(this.network)
-
-			await window.okxwallet.bitcoin.switchNetwork(expectedNetwork)
-		}
-
-		const { address, publicKey } = await window.okxwallet.bitcoin.connect()
-		const accounts = await window.okxwallet.bitcoin.getAccounts()
+		const { address, publicKey } = await window.okxwallet[this.key].connect()
+		const accounts = await window.okxwallet[this.key].getAccounts?.() || [ address ]
 
 		this.accounts = accounts
 		this.address = address
@@ -128,17 +128,16 @@ export class OkxConnector extends SatsConnector {
 	}
 
 	async switchNetwork(toNetwork: WalletNetwork): Promise<void> {
-		super.switchNetwork(toNetwork)
+		await super.switchNetwork(toNetwork)
+		this.key = getOkxWalletKey(this.network)
 		if (!this.address) return
 
-		const network = await window.okxwallet.bitcoin.getNetwork()
-		const mappedNetwork = getLibNetwork(network)
+		const { address, publicKey } = await window.okxwallet[this.key].connect()
+		const accounts = await window.okxwallet[this.key].getAccounts?.() || [ address ]
 
-		if (mappedNetwork !== this.network) {
-			const expectedNetwork = getOkxNetwork(this.network)
-
-			await window.okxwallet.bitcoin.switchNetwork(expectedNetwork)
-		}
+		this.accounts = accounts
+		this.address = address
+		this.publicKey = publicKey
 	}
 
 	disconnect() {
@@ -150,7 +149,19 @@ export class OkxConnector extends SatsConnector {
 	async changeAccount(account: { address: string, publicKey: string }) {
 		this.address = account.address
 		this.publicKey = account.publicKey
-		this.accounts = await window.okxwallet.bitcoin.getAccounts()
+		this.accounts = await window.okxwallet[this.key].getAccounts?.() || [ account.address ]
+		this.listeners.accountChanged.forEach(cb => cb(
+			this.address || "",
+			this.accounts,
+			this.publicKey || ""
+		))
+		const network = await window.okxwallet.bitcoin.getNetwork()
+		const mappedNetwork = getWalletNetwork(network)
+		if (mappedNetwork !== this.network) {
+			this.network = mappedNetwork
+			this.listeners.networkChanged.forEach(cb => cb(mappedNetwork))
+			this.key = getOkxWalletKey(mappedNetwork)
+		}
 	}
 
 	async isReady() {
@@ -160,17 +171,21 @@ export class OkxConnector extends SatsConnector {
 	}
 
 	async signMessage(message: string) {
-		return window.okxwallet.bitcoin.signMessage(message)
+		return window.okxwallet[this.key].signMessage(message)
 	}
 
 	async sendToAddress(toAddress: string, amount: number): Promise<string> {
+		if (this.key !== "bitcoin") {
+			throw new Error(`sendToAddress on ${this.key} not implemented`)
+		}
+
 		return window.okxwallet.bitcoin.sendBitcoin(toAddress, amount)
 	}
 
 	async signInput(inputIndex: number, psbt: Psbt) {
 		const publicKey = await this.getPublicKey()
 
-		const psbtHex = await window.okxwallet.bitcoin.signPsbt(psbt.toHex(), {
+		const psbtHex = await window.okxwallet[this.key].signPsbt(psbt.toHex(), {
 			autoFinalized: false,
 			toSignInputs: [
 				{
@@ -185,6 +200,10 @@ export class OkxConnector extends SatsConnector {
 	}
 
 	async sendInscription(address: string, inscriptionId: string, feeRate?: number) {
+		if (this.key !== "bitcoin") {
+			throw new Error(`sendInscription on ${this.key} not implemented`)
+		}
+
 		const { txid } = await window.okxwallet.bitcoin.sendInscription(
 			address,
 			inscriptionId,

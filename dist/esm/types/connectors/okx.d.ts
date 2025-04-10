@@ -1,6 +1,7 @@
 import { Psbt } from "bitcoinjs-lib";
 import type { WalletNetwork } from "../types";
 import { SatsConnector } from "./base";
+type OkxNetwork = "livenet" | "testnet" | "signet";
 type OkxWalletEvents = {
     accountChanged: (account: {
         address: string;
@@ -35,7 +36,6 @@ type Balance = {
     unconfirmed: number;
     total: number;
 };
-type Network = "livenet" | "testnet";
 type Okx = {
     connect: () => Promise<{
         address: string;
@@ -49,8 +49,8 @@ type Okx = {
     sendInscription: (address: string, inscriptionId: string, options?: {
         feeRate: number;
     }) => Promise<SendInscriptionsResult>;
-    switchNetwork: (network: "livenet" | "testnet") => Promise<void>;
-    getNetwork: () => Promise<Network>;
+    switchNetwork: (network: OkxNetwork) => Promise<void>;
+    getNetwork: () => Promise<OkxNetwork>;
     getPublicKey: () => Promise<string>;
     getBalance: () => Promise<Balance>;
     signMessage: (message: string) => Promise<string>;
@@ -72,6 +72,8 @@ declare global {
     interface Window {
         okxwallet: {
             bitcoin: Okx;
+            bitcoinTestnet: Pick<Okx, "connect" | "getAccounts" | "signMessage" | "signPsbt">;
+            bitcoinSignet: Pick<Okx, "connect" | "getAccounts" | "signMessage" | "signPsbt">;
         };
     }
 }
@@ -79,6 +81,7 @@ export declare class OkxConnector extends SatsConnector {
     id: string;
     name: string;
     homepage: string;
+    key: "bitcoin" | "bitcoinTestnet" | "bitcoinSignet";
     constructor(network: WalletNetwork);
     connect(): Promise<void>;
     switchNetwork(toNetwork: WalletNetwork): Promise<void>;

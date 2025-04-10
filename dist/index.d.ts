@@ -1,14 +1,15 @@
 import React, { Dispatch, SetStateAction, ReactNode } from 'react';
 import * as _tanstack_react_query from '@tanstack/react-query';
 import { QueryClient } from '@tanstack/react-query';
-import { BitcoinNetwork } from '@gobob/types';
-import { Psbt, Network as Network$3, Transaction } from 'bitcoinjs-lib';
-import { RemoteSigner } from '@gobob/bob-sdk';
-export * from '@gobob/utils';
+import { Psbt } from 'bitcoinjs-lib';
 
-type WalletNetwork = Omit<BitcoinNetwork, 'regtest'>;
+type WalletNetwork = "mainnet" | "testnet" | "signet";
 
 type Address = string;
+type Events$1 = {
+    accountChanged: ((account: string, accounts: string[], publicKey: string) => void)[];
+    networkChanged: ((network: WalletNetwork) => void)[];
+};
 declare abstract class SatsConnector {
     /** Unique connector id */
     abstract readonly id: string;
@@ -22,25 +23,26 @@ declare abstract class SatsConnector {
     address: Address | undefined;
     publicKey: string | undefined;
     network: WalletNetwork;
+    listeners: Events$1;
     constructor(network: WalletNetwork);
-    abstract connect(): Promise<void>;
-    abstract signMessage(message: string): Promise<string>;
-    abstract sendToAddress(toAddress: string, amount: number): Promise<string>;
-    abstract signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>;
     abstract isReady(): Promise<boolean>;
-    switchNetwork(toNetwork: WalletNetwork): void;
-    disconnect(): void;
+    abstract connect(): Promise<void>;
     getAccount(): string | undefined;
     getAccounts(): string[];
     isAuthorized(): boolean;
-    getNetwork(): Promise<Network$3>;
+    on<T extends keyof Events$1>(event: T, handler: Events$1[T][0]): () => void;
+    switchNetwork(toNetwork: WalletNetwork): Promise<void>;
+    abstract signMessage(message: string): Promise<string>;
+    abstract sendToAddress(toAddress: string, amount: number): Promise<string>;
+    abstract signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>;
+    abstract sendInscription(address: string, inscriptionId: string, feeRate?: number): Promise<string>;
+    disconnect(): void;
+    getNetwork(): WalletNetwork;
     getPublicKey(): Promise<string>;
-    sendInscription(address: string, inscriptionId: string, feeRate?: number): Promise<string>;
-    getTransaction(txId: string): Promise<Transaction>;
-    inscribe(contentType: "text" | "image", content: string): Promise<string>;
-    getSigner(): RemoteSigner;
+    getSigner(): SatsConnector;
 }
 
+type BitgetNetwork = "livenet" | "testnet" | "signet";
 type AccountsChangedEvent$1 = (event: "accountsChanged", handler: (accounts: Array<string>) => void) => void;
 type Inscription$2 = {
     inscriptionId: string;
@@ -68,7 +70,6 @@ type Balance$2 = {
     unconfirmed: number;
     total: number;
 };
-type Network$2 = "livenet" | "testnet";
 type Bitget = {
     requestAccounts: () => Promise<string[]>;
     getAccounts: () => Promise<string[]>;
@@ -78,8 +79,8 @@ type Bitget = {
     sendInscription: (address: string, inscriptionId: string, options?: {
         feeRate: number;
     }) => Promise<SendInscriptionsResult$2>;
-    switchNetwork: (network: "livenet" | "testnet") => Promise<void>;
-    getNetwork: () => Promise<Network$2>;
+    switchNetwork: (network: BitgetNetwork) => Promise<void>;
+    getNetwork: () => Promise<BitgetNetwork>;
     getPublicKey: () => Promise<string>;
     getBalance: () => Promise<Balance$2>;
     signMessage: (message: string) => Promise<string>;
@@ -120,72 +121,7 @@ declare class BitgetConnector extends SatsConnector {
     sendInscription(address: string, inscriptionId: string, feeRate?: number): Promise<string>;
 }
 
-type Response<T> = {
-    jsonrpc: string;
-    id: string;
-    result: T;
-};
-type AddressResult = {
-    symbol: "BTC" | "STX";
-    type: "p2wpkh" | "p2tr";
-    address: string;
-    publicKey: string;
-    tweakedPublicKey: string;
-    derivationPath: string;
-};
-interface SignPsbtRequestParams {
-    hex: string;
-    allowedSighash?: any[];
-    signAtIndex?: number | number[];
-    network?: WalletNetwork;
-    account?: number;
-    broadcast?: boolean;
-}
-type RequestAddressesResult = {
-    addresses: AddressResult[];
-};
-type RequestAddressesFn = (method: "getAddresses") => Promise<Response<RequestAddressesResult>>;
-type SignMessageResult = {
-    signature: string;
-    address: string;
-    message: string;
-};
-type SignMessageFn = (method: "signMessage", options: {
-    message: string;
-    paymentType?: "p2wpkh" | "p2tr";
-    network?: WalletNetwork;
-    account?: number;
-}) => Promise<Response<SignMessageResult>>;
-type SendBTCFn = (method: "sendTransfer", options: {
-    address: string;
-    amount: string;
-    network: WalletNetwork;
-}) => Promise<Response<{
-    txid: string;
-}>>;
-type SignPsbtFn = (method: "signPsbt", options: SignPsbtRequestParams) => Promise<Response<{
-    hex: string;
-}>>;
-declare global {
-    interface Window {
-        btc: {
-            request: SignMessageFn & RequestAddressesFn & SendBTCFn & SignPsbtFn;
-        };
-    }
-}
-declare class LeatherConnector extends SatsConnector {
-    id: string;
-    name: string;
-    homepage: string;
-    derivationPath: string | undefined;
-    constructor(network: WalletNetwork);
-    connect(): Promise<void>;
-    isReady(): Promise<boolean>;
-    signMessage(message: string): Promise<string>;
-    sendToAddress(toAddress: string, amount: number): Promise<string>;
-    signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>;
-}
-
+type OkxNetwork = "livenet" | "testnet" | "signet";
 type OkxWalletEvents = {
     accountChanged: (account: {
         address: string;
@@ -220,7 +156,6 @@ type Balance$1 = {
     unconfirmed: number;
     total: number;
 };
-type Network$1 = "livenet" | "testnet";
 type Okx = {
     connect: () => Promise<{
         address: string;
@@ -234,8 +169,8 @@ type Okx = {
     sendInscription: (address: string, inscriptionId: string, options?: {
         feeRate: number;
     }) => Promise<SendInscriptionsResult$1>;
-    switchNetwork: (network: "livenet" | "testnet") => Promise<void>;
-    getNetwork: () => Promise<Network$1>;
+    switchNetwork: (network: OkxNetwork) => Promise<void>;
+    getNetwork: () => Promise<OkxNetwork>;
     getPublicKey: () => Promise<string>;
     getBalance: () => Promise<Balance$1>;
     signMessage: (message: string) => Promise<string>;
@@ -257,6 +192,8 @@ declare global {
     interface Window {
         okxwallet: {
             bitcoin: Okx;
+            bitcoinTestnet: Pick<Okx, "connect" | "getAccounts" | "signMessage" | "signPsbt">;
+            bitcoinSignet: Pick<Okx, "connect" | "getAccounts" | "signMessage" | "signPsbt">;
         };
     }
 }
@@ -264,6 +201,7 @@ declare class OkxConnector extends SatsConnector {
     id: string;
     name: string;
     homepage: string;
+    key: "bitcoin" | "bitcoinTestnet" | "bitcoinSignet";
     constructor(network: WalletNetwork);
     connect(): Promise<void>;
     switchNetwork(toNetwork: WalletNetwork): Promise<void>;
@@ -279,6 +217,7 @@ declare class OkxConnector extends SatsConnector {
     sendInscription(address: string, inscriptionId: string, feeRate?: number): Promise<string>;
 }
 
+type UnisatNetwork = "livenet" | "testnet" | "signet";
 type AccountsChangedEvent = (event: "accountsChanged", handler: (accounts: Array<string>) => void) => void;
 type Inscription = {
     inscriptionId: string;
@@ -306,7 +245,6 @@ type Balance = {
     unconfirmed: number;
     total: number;
 };
-type Network = "livenet" | "testnet";
 type Unisat = {
     requestAccounts: () => Promise<string[]>;
     getAccounts: () => Promise<string[]>;
@@ -316,8 +254,8 @@ type Unisat = {
     sendInscription: (address: string, inscriptionId: string, options?: {
         feeRate: number;
     }) => Promise<SendInscriptionsResult>;
-    switchNetwork: (network: "livenet" | "testnet") => Promise<void>;
-    getNetwork: () => Promise<Network>;
+    switchNetwork: (network: UnisatNetwork) => Promise<void>;
+    getNetwork: () => Promise<UnisatNetwork>;
     getPublicKey: () => Promise<string>;
     getBalance: () => Promise<Balance>;
     signMessage: (message: string) => Promise<string>;
@@ -348,7 +286,7 @@ declare class UnisatConnector extends SatsConnector {
     connect(): Promise<void>;
     switchNetwork(toNetwork: WalletNetwork): Promise<void>;
     disconnect(): void;
-    changeAccount([account]: string[]): Promise<void>;
+    changeAccount(accounts: string[]): Promise<void>;
     isReady(): Promise<boolean>;
     signMessage(message: string): Promise<string>;
     sendToAddress(toAddress: string, amount: number): Promise<string>;
@@ -374,14 +312,19 @@ declare class XverseConnector extends SatsConnector {
     sendToAddress(toAddress: string, amount: number): Promise<string>;
     inscribe(contentType: "text" | "image", content: string): Promise<string>;
     signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>;
+    sendInscription(): Promise<string>;
 }
 
+type Events = {
+    networkChanged: ((toNetwork: WalletNetwork) => void)[];
+};
 type BitcoinConfigData = {
     connectors: SatsConnector[];
     connector?: SatsConnector;
     setConnector: Dispatch<SetStateAction<SatsConnector | undefined>>;
     network: WalletNetwork;
-    setNetwork: Dispatch<SetStateAction<WalletNetwork>>;
+    switchNetwork: (toNetwork: WalletNetwork) => Promise<void>;
+    on: <T extends keyof Events>(event: T, handler: Events[T][0]) => (() => void);
 };
 declare const useBitcoinWagmi: () => BitcoinConfigData;
 type Props = {
@@ -392,6 +335,7 @@ type Props = {
 declare function BitcoinWagmiProvider({ children, initialNetwork, queryClient }: Props): React.JSX.Element;
 
 declare function useBitcoinAccount(): {
+    refetch: (options?: _tanstack_react_query.RefetchOptions) => Promise<_tanstack_react_query.QueryObserverResult<[string | undefined, string[]], Error>>;
     connector: SatsConnector | undefined;
     address: string | undefined;
     addresses: string[];
@@ -402,6 +346,7 @@ declare function useBitcoinAccount(): {
     isLoadingError: false;
     isRefetchError: true;
     isSuccess: false;
+    isPlaceholderData: false;
     status: "error";
     dataUpdatedAt: number;
     errorUpdatedAt: number;
@@ -413,12 +358,12 @@ declare function useBitcoinAccount(): {
     isFetching: boolean;
     isInitialLoading: boolean;
     isPaused: boolean;
-    isPlaceholderData: boolean;
     isRefetching: boolean;
     isStale: boolean;
-    refetch: (options?: _tanstack_react_query.RefetchOptions) => Promise<_tanstack_react_query.QueryObserverResult<[string | undefined, string[]], Error>>;
     fetchStatus: _tanstack_react_query.FetchStatus;
+    promise: Promise<[string | undefined, string[]]>;
 } | {
+    refetch: (options?: _tanstack_react_query.RefetchOptions) => Promise<_tanstack_react_query.QueryObserverResult<[string | undefined, string[]], Error>>;
     connector: SatsConnector | undefined;
     address: string | undefined;
     addresses: string[];
@@ -429,6 +374,7 @@ declare function useBitcoinAccount(): {
     isLoadingError: false;
     isRefetchError: false;
     isSuccess: true;
+    isPlaceholderData: false;
     status: "success";
     dataUpdatedAt: number;
     errorUpdatedAt: number;
@@ -440,11 +386,10 @@ declare function useBitcoinAccount(): {
     isFetching: boolean;
     isInitialLoading: boolean;
     isPaused: boolean;
-    isPlaceholderData: boolean;
     isRefetching: boolean;
     isStale: boolean;
-    refetch: (options?: _tanstack_react_query.RefetchOptions) => Promise<_tanstack_react_query.QueryObserverResult<[string | undefined, string[]], Error>>;
     fetchStatus: _tanstack_react_query.FetchStatus;
+    promise: Promise<[string | undefined, string[]]>;
 };
 
 declare function useBitcoinConnect(): {
@@ -687,4 +632,5 @@ declare function useBitcoinNetwork(): {
     submittedAt: number;
 };
 
-export { BitcoinWagmiProvider, BitgetConnector, LeatherConnector, OkxConnector, SatsConnector, UnisatConnector, XverseConnector, useBitcoinAccount, useBitcoinConnect, useBitcoinDisconnect, useBitcoinNetwork, useBitcoinWagmi };
+export { BitcoinWagmiProvider, BitgetConnector, OkxConnector, SatsConnector, UnisatConnector, XverseConnector, useBitcoinAccount, useBitcoinConnect, useBitcoinDisconnect, useBitcoinNetwork, useBitcoinWagmi };
+export type { WalletNetwork };

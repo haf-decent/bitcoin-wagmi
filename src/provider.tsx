@@ -3,8 +3,10 @@ import React, {
 	type ReactNode,
 	type SetStateAction,
 	createContext,
+	useCallback,
 	useContext,
 	useEffect,
+	useRef,
 	useState
 } from "react"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
@@ -12,19 +14,23 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import type { WalletNetwork } from "./types"
 import {
 	BitgetConnector,
-	LeatherConnector,
 	OkxConnector,
 	SatsConnector,
 	UnisatConnector,
 	XverseConnector
 } from "./connectors"
 
+type Events = {
+	networkChanged: ((toNetwork: WalletNetwork) => void)[]
+}
+
 type BitcoinConfigData = {
 	connectors: SatsConnector[],
 	connector?: SatsConnector,
 	setConnector: Dispatch<SetStateAction<SatsConnector | undefined>>,
 	network: WalletNetwork,
-	setNetwork: Dispatch<SetStateAction<WalletNetwork>>
+	switchNetwork: (toNetwork: WalletNetwork) => Promise<void>,
+	on: <T extends keyof Events>(event: T, handler: Events[T][0]) => (() => void)
 }
 
 const defaultState: BitcoinConfigData = {
@@ -32,7 +38,8 @@ const defaultState: BitcoinConfigData = {
 	connector: undefined,
 	setConnector: () => {},
 	network: "mainnet",
-	setNetwork: () => {}
+	switchNetwork: async () => {},
+	on: () => () => {}
 }
 const BitcoinWagmiContext = createContext<BitcoinConfigData>(defaultState)
 
@@ -58,6 +65,9 @@ export function BitcoinWagmiProvider({
 	queryClient = new QueryClient()
 }: Props) {
 	const [connectors, setConnectors] = useState<BitcoinConfigData["connectors"]>([])
+	const connectorsRef = useRef(connectors)
+	connectorsRef.current = connectors
+
 	const [connector, setConnector] = useState<BitcoinConfigData["connector"]>()
 
 	const [network, setNetwork] = useState<BitcoinConfigData["network"]>(initialNetwork)
@@ -68,16 +78,30 @@ export function BitcoinWagmiProvider({
 			new XverseConnector(initialNetwork),
 			new UnisatConnector(initialNetwork),
 			new OkxConnector(initialNetwork),
-			new LeatherConnector(initialNetwork),
 			new BitgetConnector(initialNetwork)
 		])
 	}, [])
 
-	useEffect(() => {
-		connectors.forEach(connector => (
-			connector.network !== network && connector.switchNetwork(network)
-		))
-	}, [connectors, network])
+	const listeners = useRef<Events>({
+		networkChanged: []
+	})
+	const on: BitcoinConfigData["on"] = useCallback((event, handler) => {
+		listeners.current[event].push(handler)
+
+		return () => {
+			listeners.current[event] = listeners.current[event].filter(cb => cb !== handler)
+		}
+	}, [])
+
+	const switchNetwork = useCallback(async (toNetwork: WalletNetwork) => {
+		setNetwork(toNetwork)
+		await Promise.allSettled(
+			connectorsRef.current.map(connector => (
+				connector.network !== toNetwork && connector.switchNetwork(toNetwork)
+			))
+		)
+		listeners.current.networkChanged.forEach(cb => cb(toNetwork))
+	}, [])
 
 	return (
 		<QueryClientProvider client={queryClient}>
@@ -86,7 +110,8 @@ export function BitcoinWagmiProvider({
 				connector,
 				setConnector,
 				network,
-				setNetwork
+				switchNetwork,
+				on
 			}}>
 				{children}
 			</BitcoinWagmiContext.Provider>

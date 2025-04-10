@@ -19,4 +19,5 @@ export declare class XverseConnector extends SatsConnector {
     sendToAddress(toAddress: string, amount: number): Promise<string>;
     inscribe(contentType: "text" | "image", content: string): Promise<string>;
     signInput(inputIndex: number, psbt: Psbt): Promise<Psbt>;
+    sendInscription(): Promise<string>;
 }

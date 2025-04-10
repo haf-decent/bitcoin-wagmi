@@ -4,22 +4,19 @@ import { WalletNetwork } from "../types"
 
 import { SatsConnector } from "./base"
 
-const getLibNetwork = (network: Network): WalletNetwork => {
+type UnisatNetwork = "livenet" | "testnet" | "signet"
+
+const getUnisatNetwork = (network: WalletNetwork): UnisatNetwork => {
 	switch (network) {
-		case "livenet":
-			return "mainnet"
-		case "testnet":
-			return "testnet"
+		case "mainnet": return "livenet"
+		default: return network
 	}
 }
 
-const getUnisatNetwork = (network: WalletNetwork): Network => {
+const getWalletNetwork = (network: UnisatNetwork): WalletNetwork => {
 	switch (network) {
-		default:
-		case "mainnet":
-			return "livenet"
-		case "testnet":
-			return "testnet"
+		case "livenet": return "mainnet"
+		default: return network
 	}
 }
 
@@ -49,8 +46,6 @@ type SendInscriptionsResult = { txid: string }
 
 type Balance = { confirmed: number, unconfirmed: number, total: number }
 
-type Network = "livenet" | "testnet"
-
 type Unisat = {
 	requestAccounts: () => Promise<string[]>,
 	getAccounts: () => Promise<string[]>,
@@ -62,8 +57,8 @@ type Unisat = {
 		inscriptionId: string,
 		options?: { feeRate: number }
 	) => Promise<SendInscriptionsResult>,
-	switchNetwork: (network: "livenet" | "testnet") => Promise<void>,
-	getNetwork: () => Promise<Network>,
+	switchNetwork: (network: UnisatNetwork) => Promise<void>,
+	getNetwork: () => Promise<UnisatNetwork>,
 	getPublicKey: () => Promise<string>,
 	getBalance: () => Promise<Balance>,
 	signMessage: (message: string) => Promise<string>,
@@ -100,11 +95,13 @@ export class UnisatConnector extends SatsConnector {
 
 	constructor(network: WalletNetwork) {
 		super(network)
+
+		this.changeAccount = this.changeAccount.bind(this)
 	}
 
 	async connect(): Promise<void> {
 		const network = await window.unisat.getNetwork()
-		const mappedNetwork = getLibNetwork(network)
+		const mappedNetwork = getWalletNetwork(network)
 
 		if (mappedNetwork !== this.network) {
 			const expectedNetwork = getUnisatNetwork(this.network)
@@ -125,17 +122,26 @@ export class UnisatConnector extends SatsConnector {
 	}
 
 	async switchNetwork(toNetwork: WalletNetwork): Promise<void> {
-		super.switchNetwork(toNetwork)
+		await super.switchNetwork(toNetwork)
 		if (!this.address) return
 
 		const network = await window.unisat.getNetwork()
-		const mappedNetwork = getLibNetwork(network)
+		const mappedNetwork = getWalletNetwork(network)
 
 		if (mappedNetwork !== this.network) {
 			const expectedNetwork = getUnisatNetwork(this.network)
 
 			await window.unisat.switchNetwork(expectedNetwork)
 		}
+
+		const [accounts, publickKey] = await Promise.all([
+			window.unisat.requestAccounts(),
+			window.unisat.getPublicKey()
+		])
+
+		this.accounts = accounts
+		this.address = accounts[0]
+		this.publicKey = publickKey
 	}
 
 	disconnect() {
@@ -144,9 +150,21 @@ export class UnisatConnector extends SatsConnector {
 		window.unisat.removeListener("accountsChanged", this.changeAccount)
 	}
 
-	async changeAccount([account]: string[]) {
-		this.address = account
+	async changeAccount(accounts: string[]) {
+		this.accounts = accounts
+		this.address = accounts[0]
 		this.publicKey = await window.unisat.getPublicKey()
+		this.listeners.accountChanged.forEach(cb => cb(
+			this.address || "",
+			this.accounts,
+			this.publicKey || ""
+		))
+		const network = await window.unisat.getNetwork()
+		const mappedNetwork = getWalletNetwork(network)
+		if (mappedNetwork !== this.network) {
+			this.network = mappedNetwork
+			this.listeners.networkChanged.forEach(cb => cb(mappedNetwork))
+		}
 	}
 
 	async isReady() {
