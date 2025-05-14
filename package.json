@@ -52,6 +52,6 @@
   "dependencies": {
     "@tanstack/react-query": "^5.51.11",
     "bitcoinjs-lib": "^6.1.6",
-    "sats-connect": "^3.3.0"
+    "sats-connect": "^3.5.0"
   }
 }
